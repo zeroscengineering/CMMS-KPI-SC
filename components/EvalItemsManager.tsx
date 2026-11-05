@@ -52,6 +52,20 @@ export default function EvalItemsManager({
     if (fail((await sb.from("eval_items").delete().eq("id", it.id)).error)) return;
     onChanged();
   }
+  const jdItems = engineer.jd_sections.flatMap((sec, i) =>
+    sec.items.map((t, j) => ({ key: `${i}.${j}`, label: `${i + 1}.${j + 1} ${t}`, name: t, group: sec.title }))
+  );
+  const [pick, setPick] = useState<Record<string, boolean>>({});
+  async function fromJd() {
+    const chosen = jdItems.filter((x) => pick[x.key] && !items.some((it) => it.name === x.name));
+    if (!chosen.length) return setMsg("ยังไม่ได้เลือกรายการ (หรือมีหัวข้อชื่อเดียวกันแล้ว)");
+    const rows = chosen.map((x, n) => ({
+      engineer_id: engineer.id, name: x.name, description: x.group, kind: "rating", direction: "higher",
+      target: null, unit: null, weight: 10, sort_order: items.length + n,
+    }));
+    if (fail((await sb.from("eval_items").insert(rows)).error)) return;
+    setPick({}); onChanged();
+  }
   async function copy() {
     if (!copyFrom) return;
     const src = allItems.filter((i) => i.engineer_id === copyFrom);
@@ -97,6 +111,25 @@ export default function EvalItemsManager({
           {items.length === 0 && <tr><td className="td text-center text-slate-400" colSpan={5}>ยังไม่มีหัวข้อเพิ่มเติม (ใช้เฉพาะ KPI หลัก 4 ข้อ)</td></tr>}
         </tbody>
       </table>
+
+      {isAdmin && jdItems.length > 0 && (
+        <details className="rounded-lg border bg-slate-50 p-3">
+          <summary className="cursor-pointer text-sm font-medium">สร้างหัวข้อประเมินจาก Job Description</summary>
+          <p className="my-2 text-xs text-slate-500">ติ๊กรายการที่ต้องการประเมิน ระบบจะสร้างเป็นหัวข้อให้คะแนน 1–5 น้ำหนัก 10 (ปรับภายหลังได้)</p>
+          <div className="max-h-64 space-y-1 overflow-auto">
+            {jdItems.map((x) => {
+              const exists = items.some((it) => it.name === x.name);
+              return (
+                <label key={x.key} className={`flex items-start gap-2 text-sm ${exists ? "text-slate-300" : ""}`}>
+                  <input type="checkbox" disabled={exists} checked={!!pick[x.key]} onChange={(e) => setPick({ ...pick, [x.key]: e.target.checked })} />
+                  <span>{x.label}{exists && " (มีแล้ว)"}</span>
+                </label>
+              );
+            })}
+          </div>
+          <button className="btn mt-2" onClick={fromJd}>สร้างหัวข้อที่เลือก</button>
+        </details>
+      )}
 
       {isAdmin && (
         <div className="rounded-lg border bg-slate-50 p-3">

@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, LayoutDashboard, LogOut, Settings, Users, Wrench } from "lucide-react";
+import { ClipboardCheck, ClipboardList, LayoutDashboard, LogOut, Settings, Users, Wrench } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
 import { useRole } from "@/lib/useYearData";
 
 const links = [
   { href: "/", label: "สรุปแผนก", icon: LayoutDashboard },
   { href: "/entry", label: "บันทึกรายเดือน", icon: ClipboardList },
+  { href: "/scores", label: "ให้คะแนนหัวข้อ", icon: ClipboardCheck },
   { href: "/individual", label: "สรุปรายบุคคล", icon: Users },
   { href: "/settings", label: "ตั้งค่า", icon: Settings },
 ];

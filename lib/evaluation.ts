@@ -188,3 +188,12 @@ export function teamEvaluation(
 
   return { rows, scoredCount: scored.length, avgTotal, avgPerformance, grade, gradeCount };
 }
+
+/** เปรียบเทียบเดือนล่าสุดที่มีคะแนนกับเดือนก่อนหน้า */
+export function trendOf(series: { month: string; total: number | null }[]) {
+  const v = series.filter((s) => s.total != null) as { month: string; total: number }[];
+  if (v.length === 0) return null;
+  const last = v[v.length - 1];
+  const prev = v.length > 1 ? v[v.length - 2] : null;
+  return { month: last.month, last: last.total, delta: prev ? last.total - prev.total : null };
+}

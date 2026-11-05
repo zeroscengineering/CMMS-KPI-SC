@@ -9,11 +9,13 @@ import {
 import { Card, ErrorBox, GradeBadge, Loading, YearSelect } from "@/components/ui";
 import Avatar3D from "@/components/Avatar3D";
 import EvalItemsManager from "@/components/EvalItemsManager";
+import PersonNotes from "@/components/PersonNotes";
+import Trend from "@/components/Trend";
 import JdEditor from "@/components/JdEditor";
 import EvalScoreEntry from "@/components/EvalScoreEntry";
 import { currentYear, thaiMonth, yearLabel, yearMonths } from "@/lib/period";
 import { useRole, useYearData } from "@/lib/useYearData";
-import { evaluatePerson, monthlySeries } from "@/lib/evaluation";
+import { evaluatePerson, monthlySeries, trendOf } from "@/lib/evaluation";
 import { fmt } from "@/lib/kpi";
 import { getSupabase } from "@/lib/supabase";
 
@@ -21,7 +23,7 @@ export default function PersonPage() {
   const { id } = useParams<{ id: string }>();
   const [fy, setFy] = useState(currentYear());
   const { settings, engineers, logs, items, scores, loading, error, reload } = useYearData(fy);
-  const { canEdit, isAdmin } = useRole();
+  const { canEdit, isAdmin, email } = useRole();
   const e = engineers.find((x) => x.id === id);
   const months = useMemo(() => yearMonths(fy), [fy]);
   const [w, setW] = useState<Record<string, string> | null>(null);
@@ -32,6 +34,7 @@ export default function PersonPage() {
     () => (e ? monthlySeries(e, months, logs, items, scores, settings) : []),
     [e, months, logs, items, scores, settings]
   );
+  const trend = trendOf(series);
   const myItems = items.filter((i) => i.engineer_id === id);
 
   const WK = [["w_error", "KPI1 ผิดพลาด"], ["w_ftf", "KPI2 FTF"], ["w_pm", "KPI3 PM"], ["w_complaint", "KPI4 ร้องเรียน"]] as const;
@@ -47,8 +50,11 @@ export default function PersonPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/individual" className="text-sm text-brand-700">← กลับ</Link>
-        <YearSelect value={fy} onChange={setFy} />
+        <Link href="/individual" className="no-print text-sm text-brand-700">← กลับ</Link>
+        <div className="no-print flex items-center gap-2">
+          <button className="btn-ghost" onClick={() => window.print()}>พิมพ์ / บันทึก PDF</button>
+          <YearSelect value={fy} onChange={setFy} />
+        </div>
       </div>
       {error && <ErrorBox message={error} />}
       {loading ? <Loading /> : !e || !ev ? <Card>ไม่พบพนักงาน</Card> : (
@@ -62,6 +68,7 @@ export default function PersonPage() {
               </div>
               <div className="text-center">
                 <div className="text-4xl font-semibold">{fmt(ev.total)}</div>
+                {trend && <div title={`เทียบเดือนก่อนหน้า (ล่าสุด ${thaiMonth(trend.month)})`}><Trend delta={trend.delta} /></div>}
                 <div className="text-xs text-slate-400">เต็ม 100</div>
                 <GradeBadge grade={ev.grade} />
                 <div className="mt-1 text-xs text-slate-500">ส่วนผลงาน {fmt(ev.performance)} / {settings.performance_share}</div>
@@ -120,7 +127,7 @@ export default function PersonPage() {
             <p className="mt-2 text-xs text-slate-500">หัวข้อที่ยังไม่มีข้อมูลจะถูกตัดออก และกระจายน้ำหนักที่เหลือให้รวมเป็น 100</p>
           </Card>
 
-          <Card title="น้ำหนัก KPI หลักของคนนี้">
+          <Card title="น้ำหนัก KPI หลักของคนนี้" className="no-print">
             {w ? (
               <div className="space-y-2">
                 <div className="grid gap-2 sm:grid-cols-4">
@@ -145,11 +152,15 @@ export default function PersonPage() {
             {msg && <div className="mt-2 text-sm text-slate-600">{msg}</div>}
           </Card>
 
-          <Card title="หัวข้อประเมินเฉพาะบุคคล (ตามหน้าที่)">
+          <Card title="หัวข้อประเมินเฉพาะบุคคล (ตามหน้าที่)" className="no-print">
             <EvalItemsManager engineer={e} items={myItems} allItems={items} engineers={engineers} isAdmin={isAdmin} onChanged={reload} />
           </Card>
 
-          <Card title="กรอกคะแนนหัวข้อเพิ่มเติมรายเดือน">
+          <Card title="ความเห็นหัวหน้ารายเดือน">
+            <PersonNotes engineerId={e.id} months={months} canEdit={canEdit} email={email} />
+          </Card>
+
+          <Card title="กรอกคะแนนหัวข้อเพิ่มเติมรายเดือน" className="no-print">
             <EvalScoreEntry items={myItems} scores={scores} months={months} canEdit={canEdit} onChanged={reload} />
           </Card>
         </>

@@ -7,7 +7,9 @@ import Avatar3D from "@/components/Avatar3D";
 import { currentYear, yearLabel } from "@/lib/period";
 import { useYearData } from "@/lib/useYearData";
 import { fmt } from "@/lib/kpi";
-import { teamEvaluation } from "@/lib/evaluation";
+import { monthlySeries, teamEvaluation, trendOf } from "@/lib/evaluation";
+import { yearMonths } from "@/lib/period";
+import Trend from "@/components/Trend";
 
 export default function IndividualPage() {
   const [fy, setFy] = useState(currentYear());
@@ -44,6 +46,7 @@ export default function IndividualPage() {
                     <div className="text-right">
                       <div className="text-2xl font-semibold">{fmt(ev.total)}</div>
                       <GradeBadge grade={ev.grade} />
+                      <div><Trend delta={trendOf(monthlySeries(e, yearMonths(fy), logs, items, scores, settings))?.delta} /></div>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">

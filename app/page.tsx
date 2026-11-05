@@ -7,7 +7,8 @@ import { AlertTriangle, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react
 import Link from "next/link";
 import { Card, ErrorBox, YearSelect, Loading, StatusBadge, GradeBadge } from "@/components/ui";
 import Avatar3D from "@/components/Avatar3D";
-import { monthlySeries, teamEvaluation } from "@/lib/evaluation";
+import Trend from "@/components/Trend";
+import { monthlySeries, teamEvaluation, trendOf } from "@/lib/evaluation";
 import ExportButtons from "@/components/ExportButtons";
 import { currentYear, yearMonths, thaiMonth } from "@/lib/period";
 import { useYearData } from "@/lib/useYearData";
@@ -24,6 +25,26 @@ export default function DashboardPage() {
     () => teamEvaluation(engineers, logs, items, scores, settings),
     [engineers, logs, items, scores, settings]
   );
+  const insight = useMemo(() => {
+    const ms = yearMonths(fy);
+    const rows = teamEval.rows.map(({ e }) => {
+      const series = monthlySeries(e, ms, logs, items, scores, settings);
+      return { e, series, trend: trendOf(series) };
+    });
+    // เดือนล่าสุดที่มีข้อมูลของใครสักคน
+    let latest = -1;
+    rows.forEach((r) => r.series.forEach((s, i) => { if (s.total != null && i > latest) latest = i; }));
+    const star = latest < 0 ? null : rows
+      .map((r) => ({ e: r.e, v: r.series[latest].total }))
+      .filter((x): x is { e: typeof x.e; v: number } => x.v != null)
+      .sort((a, b) => b.v - a.v)[0] ?? null;
+    const watchMin = [...settings.grade_thresholds].sort((a, b) => a.min - b.min)[1]?.min ?? 50; // ต่ำกว่าเกรด C ขึ้นไปถือว่าต้องเฝ้าดู
+    const watch = rows
+      .filter((r) => r.trend && (r.trend.last < watchMin || (r.trend.delta != null && r.trend.delta <= -10)))
+      .map((r) => ({ e: r.e, last: r.trend!.last, delta: r.trend!.delta }));
+    return { latest: latest < 0 ? null : ms[latest], star, watch, watchMin };
+  }, [fy, teamEval, logs, items, scores, settings]);
+
   const avgSeries = useMemo(() => {
     const ms = yearMonths(fy);
     const per = teamEval.rows.map((r) => monthlySeries(r.e, ms, logs, items, scores, settings));
@@ -136,6 +157,30 @@ export default function DashboardPage() {
               <ExportButtons fy={fy} />
             </div>
           </Card>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card title={`⭐ ดาวเด่น${insight.latest ? ` (${thaiMonth(insight.latest)})` : ""}`}>
+              {insight.star ? (
+                <Link href={`/individual/${insight.star.e.id}`} className="flex items-center gap-3">
+                  <Avatar3D name={insight.star.e.full_name} size={56} />
+                  <div><div className="font-semibold">{insight.star.e.full_name}</div><div className="text-sm text-slate-500">คะแนน {fmt(insight.star.v)} / 100</div></div>
+                </Link>
+              ) : <p className="text-sm text-slate-400">ยังไม่มีข้อมูล</p>}
+            </Card>
+            <Card title="⚠️ ควรเฝ้าดู">
+              {insight.watch.length ? (
+                <div className="space-y-1.5">
+                  {insight.watch.map((w) => (
+                    <Link key={w.e.id} href={`/individual/${w.e.id}`} className="flex items-center gap-2 text-sm hover:underline">
+                      <Avatar3D name={w.e.full_name} size={28} /> {w.e.full_name}
+                      <span className="text-slate-500">{fmt(w.last)}</span> <Trend delta={w.delta} />
+                    </Link>
+                  ))}
+                  <p className="text-xs text-slate-400">คะแนนล่าสุดต่ำกว่า {insight.watchMin} หรือลดลง ≥ 10 จากเดือนก่อน</p>
+                </div>
+              ) : <p className="text-sm text-slate-400">ไม่มีใครต้องเฝ้าดู</p>}
+            </Card>
+          </div>
 
           <Card title="อันดับและคะแนนรายบุคคล (รวมเป็นคะแนนแผนก)">
             <div className="mb-3 flex flex-wrap gap-2 text-sm">
