@@ -7,6 +7,7 @@ import { AlertTriangle, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react
 import Link from "next/link";
 import { Card, ErrorBox, YearSelect, Loading, StatusBadge, GradeBadge } from "@/components/ui";
 import Avatar3D from "@/components/Avatar3D";
+import type { Engineer } from "@/lib/types";
 import Trend from "@/components/Trend";
 import { monthlySeries, teamEvaluation, trendOf } from "@/lib/evaluation";
 import ExportButtons from "@/components/ExportButtons";
@@ -34,10 +35,13 @@ export default function DashboardPage() {
     // เดือนล่าสุดที่มีข้อมูลของใครสักคน
     let latest = -1;
     rows.forEach((r) => r.series.forEach((s, i) => { if (s.total != null && i > latest) latest = i; }));
-    const star = latest < 0 ? null : rows
-      .map((r) => ({ e: r.e, v: r.series[latest].total }))
-      .filter((x): x is { e: typeof x.e; v: number } => x.v != null)
-      .sort((a, b) => b.v - a.v)[0] ?? null;
+    let star: { e: Engineer; v: number } | null = null;
+    if (latest >= 0) {
+      for (const r of rows) {
+        const v = r.series[latest].total;
+        if (v != null && (star == null || v > star.v)) star = { e: r.e, v };
+      }
+    }
     const watchMin = [...settings.grade_thresholds].sort((a, b) => a.min - b.min)[1]?.min ?? 50; // ต่ำกว่าเกรด C ขึ้นไปถือว่าต้องเฝ้าดู
     const watch = rows
       .filter((r) => r.trend && (r.trend.last < watchMin || (r.trend.delta != null && r.trend.delta <= -10)))
