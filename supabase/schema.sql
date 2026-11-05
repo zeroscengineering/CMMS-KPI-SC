@@ -199,3 +199,14 @@ create policy "logs_editor_update" on public.monthly_kpi_logs
 drop policy if exists "logs_editor_delete" on public.monthly_kpi_logs;
 create policy "logs_editor_delete" on public.monthly_kpi_logs
   for delete to authenticated using (public.is_editor());
+
+-- ---------------------------------------------------------------------
+-- 6) Grants : ให้เฉพาะผู้ใช้ที่ล็อกอิน (role authenticated) เข้าถึงตารางผ่าน Data API
+--    จำเป็นเมื่อปิด "Automatically expose new tables" ตอนสร้างโปรเจกต์
+--    (ผู้ใช้ที่ยังไม่ล็อกอิน/anon จะไม่มีสิทธิ์ใดๆ  และ RLS ยังคุมสิทธิ์รายแถวอีกชั้น)
+-- ---------------------------------------------------------------------
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.engineers        to authenticated;
+grant select, insert, update, delete on public.kpi_settings     to authenticated;
+grant select, insert, update, delete on public.monthly_kpi_logs to authenticated;
+grant select, update                 on public.profiles         to authenticated;
