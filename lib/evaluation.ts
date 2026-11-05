@@ -42,7 +42,8 @@ export function itemMonthScore(item: EvalItem, sc: EvalScore): number | null {
     return sc.rating == null ? null : clamp((sc.rating / 5) * 100);
   }
   if (sc.actual == null || item.target == null) return null;
-  const { actual, target } = sc;
+  const actual = sc.actual;
+  const target = item.target;
   if (item.direction === "lower") {
     if (actual <= target) return 100;
     return target <= 0 ? 0 : clamp((target / actual) * 100);
