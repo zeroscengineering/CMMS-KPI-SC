@@ -1,8 +1,11 @@
+export type JdSection = { title: string; items: string[] };
+
 export type Engineer = {
   id: string;
   full_name: string;
   position: string; // ตำแหน่ง (พิมพ์เองได้อิสระ)
-  job_description: string; // Job Description (JD)
+  job_description: string; // JD แบบข้อความเดิม (เก็บไว้เป็นสำรอง)
+  jd_sections: JdSection[]; // JD แบบหัวข้อใหญ่ + รายละเอียด
   active: boolean;
   // น้ำหนัก KPI หลักรายคน: null = ใช้ค่าของปีนั้น, 0 = ปิด KPI ข้อนั้น
   w_error: number | null;

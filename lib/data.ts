@@ -48,6 +48,7 @@ export async function loadYearData(sb: SupabaseClient, fy: number): Promise<Year
   const engineers = (e.data as Engineer[]).map((r) => ({
     ...r,
     job_description: r.job_description ?? "",
+    jd_sections: Array.isArray(r.jd_sections) ? r.jd_sections : [],
     w_error: num(r.w_error),
     w_ftf: num(r.w_ftf),
     w_pm: num(r.w_pm),

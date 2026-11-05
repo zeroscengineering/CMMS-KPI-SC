@@ -4,6 +4,13 @@ import { yearLabel, yearMonths, thaiMonth } from "./period";
 import { complaintTotal, ftfPct, pmPct, sumLogs } from "./kpi";
 import { evaluatePerson, teamEvaluation } from "./evaluation";
 
+function jdText(e: { job_description: string; jd_sections: { title: string; items: string[] }[] }) {
+  if (!e.jd_sections?.length) return e.job_description ?? "";
+  return e.jd_sections
+    .map((s, i) => [`${i + 1} ${s.title}`, ...s.items.map((t, j) => `   ${i + 1}.${j + 1} ${t}`)].join("\n"))
+    .join("\n");
+}
+
 const HEADER_FILL: ExcelJS.Fill = {
   type: "pattern",
   pattern: "solid",
@@ -50,7 +57,7 @@ export async function buildWorkbook({ settings, engineers, logs, items, scores }
     ws1.addRow([
       i + 1, e.full_name, e.position, sc("k1"), round(ev.ftf), sc("k2"), round(ev.pm),
       sc("k3"), sc("k4"), custom, round(ev.total), round(ev.performance), ev.grade ?? "-",
-      e.job_description ?? "",
+      jdText(e),
     ]);
   });
   ws1.addRow([]);

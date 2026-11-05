@@ -9,6 +9,7 @@ import {
 import { Card, ErrorBox, GradeBadge, Loading, YearSelect } from "@/components/ui";
 import Avatar3D from "@/components/Avatar3D";
 import EvalItemsManager from "@/components/EvalItemsManager";
+import JdEditor from "@/components/JdEditor";
 import EvalScoreEntry from "@/components/EvalScoreEntry";
 import { currentYear, thaiMonth, yearLabel, yearMonths } from "@/lib/period";
 import { useRole, useYearData } from "@/lib/useYearData";
@@ -58,11 +59,6 @@ export default function PersonPage() {
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-semibold">{e.full_name}</h1>
                 <div className="text-sm text-slate-500">{e.position || "–"} · {yearLabel(fy)}</div>
-                {e.job_description?.trim() && (
-                  <div className="mt-2 max-w-2xl whitespace-pre-wrap rounded bg-slate-50 p-2 text-xs text-slate-600">
-                    <b>หน้าที่ (JD):</b> {e.job_description}
-                  </div>
-                )}
               </div>
               <div className="text-center">
                 <div className="text-4xl font-semibold">{fmt(ev.total)}</div>
@@ -71,6 +67,10 @@ export default function PersonPage() {
                 <div className="mt-1 text-xs text-slate-500">ส่วนผลงาน {fmt(ev.performance)} / {settings.performance_share}</div>
               </div>
             </div>
+          </Card>
+
+          <Card title="หน้าที่ความรับผิดชอบ (Job Description)">
+            <JdEditor key={e.id + JSON.stringify(e.jd_sections)} engineer={e} canEdit={isAdmin} onChanged={reload} />
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-2">

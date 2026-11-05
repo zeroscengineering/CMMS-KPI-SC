@@ -283,3 +283,6 @@ create policy "eval_scores_editor_delete" on public.eval_scores
 -- 5) Grants (เฉพาะผู้ใช้ที่ล็อกอิน)
 grant select, insert, update, delete on public.eval_items  to authenticated;
 grant select, insert, update, delete on public.eval_scores to authenticated;
+
+-- 8) JD แบบหัวข้อใหญ่/รายละเอียด (migration 004)
+alter table public.engineers add column if not exists jd_sections jsonb not null default '[]'::jsonb;
