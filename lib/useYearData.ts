@@ -9,6 +9,8 @@ export function useYearData(fy: number) {
     settings: { ...DEFAULT_SETTINGS, year: fy },
     engineers: [],
     logs: [],
+    items: [],
+    scores: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

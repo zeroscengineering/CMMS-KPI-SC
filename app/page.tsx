@@ -4,20 +4,34 @@ import {
   CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { AlertTriangle, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react";
-import { Card, ErrorBox, YearSelect, Loading, StatusBadge } from "@/components/ui";
+import Link from "next/link";
+import { Card, ErrorBox, YearSelect, Loading, StatusBadge, GradeBadge } from "@/components/ui";
+import Avatar3D from "@/components/Avatar3D";
+import { monthlySeries, teamEvaluation } from "@/lib/evaluation";
 import ExportButtons from "@/components/ExportButtons";
 import { currentYear, yearMonths, thaiMonth } from "@/lib/period";
 import { useYearData } from "@/lib/useYearData";
-import { complaintTotal, fmt, ftfPct, kpiPass, pmPct, scoreTotals, sumLogs } from "@/lib/kpi";
+import { complaintTotal, fmt, ftfPct, kpiPass, pmPct, sumLogs } from "@/lib/kpi";
 
 export default function DashboardPage() {
   const [fy, setFy] = useState(currentYear());
-  const { settings, engineers, logs, loading, error } = useYearData(fy);
+  const { settings, engineers, logs, items, scores, loading, error } = useYearData(fy);
 
   const all = useMemo(() => sumLogs(logs), [logs]);
   const hasData = logs.length > 0;
   const pass = kpiPass(all, settings, hasData);
-  const team = scoreTotals(all, settings, hasData);
+  const teamEval = useMemo(
+    () => teamEvaluation(engineers, logs, items, scores, settings),
+    [engineers, logs, items, scores, settings]
+  );
+  const avgSeries = useMemo(() => {
+    const ms = yearMonths(fy);
+    const per = teamEval.rows.map((r) => monthlySeries(r.e, ms, logs, items, scores, settings));
+    return ms.map((m, i) => {
+      const v = per.map((p) => p[i].total).filter((x): x is number => x != null);
+      return { name: thaiMonth(m), "คะแนนเฉลี่ยแผนก": v.length ? Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 10) / 10 : undefined };
+    });
+  }, [fy, teamEval, logs, items, scores, settings]);
 
   const monthly = useMemo(
     () =>
@@ -113,13 +127,47 @@ export default function DashboardPage() {
                 <b>
                   ผ่านเป้า {passCount} / {known} ด้าน
                 </b>
-                {team.total != null && (
+                {teamEval.avgTotal != null && (
                   <span className="ml-3 text-slate-500">
-                    คะแนนรวมทีม {fmt(team.total)} / 100 · เกรด {team.grade}
+                    คะแนนเฉลี่ยแผนก {fmt(teamEval.avgTotal)} / 100 · เกรด {teamEval.grade} · ส่วนผลงาน {fmt(teamEval.avgPerformance)} / {settings.performance_share}
                   </span>
                 )}
               </div>
               <ExportButtons fy={fy} />
+            </div>
+          </Card>
+
+          <Card title="อันดับและคะแนนรายบุคคล (รวมเป็นคะแนนแผนก)">
+            <div className="mb-3 flex flex-wrap gap-2 text-sm">
+              {[...teamEval.gradeCount.entries()].sort().map(([g, n]) => (
+                <span key={g} className="rounded-lg border px-2 py-1"><GradeBadge grade={g} /> {n} คน</span>
+              ))}
+              {teamEval.scoredCount === 0 && <span className="text-slate-400">ยังไม่มีคะแนน</span>}
+            </div>
+            <div className="space-y-2">
+              {teamEval.rows.map(({ e, ev }, i) => (
+                <Link key={e.id} href={`/individual/${e.id}`} className="flex items-center gap-3 rounded-lg p-1 hover:bg-slate-50">
+                  <span className="w-5 text-xs text-slate-400">{i + 1}</span>
+                  <Avatar3D name={e.full_name} size={36} />
+                  <span className="w-40 truncate text-sm">{e.full_name}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded bg-slate-100">
+                    <div className="h-full bg-brand-600" style={{ width: `${ev.total ?? 0}%` }} />
+                  </div>
+                  <span className="w-12 text-right text-sm font-semibold">{fmt(ev.total)}</span>
+                  <GradeBadge grade={ev.grade} />
+                </Link>
+              ))}
+            </div>
+            <div className="mt-4 h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={avgSeries} margin={{ left: -10, right: 10, top: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={11} />
+                  <YAxis domain={[0, 100]} fontSize={12} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="คะแนนเฉลี่ยแผนก" stroke="#8b5cf6" strokeWidth={2} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </Card>
 

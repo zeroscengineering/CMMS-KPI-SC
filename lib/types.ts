@@ -4,6 +4,36 @@ export type Engineer = {
   position: string; // ตำแหน่ง (พิมพ์เองได้อิสระ)
   job_description: string; // Job Description (JD)
   active: boolean;
+  // น้ำหนัก KPI หลักรายคน: null = ใช้ค่าของปีนั้น, 0 = ปิด KPI ข้อนั้น
+  w_error: number | null;
+  w_ftf: number | null;
+  w_pm: number | null;
+  w_complaint: number | null;
+};
+
+/** หัวข้อประเมินที่สร้างเอง (ต่อบุคคล) */
+export type EvalItem = {
+  id: string;
+  engineer_id: string;
+  name: string;
+  description: string | null;
+  kind: "target" | "rating"; // target = ค่าจริงเทียบเป้า, rating = ให้คะแนน 1-5
+  direction: "higher" | "lower"; // higher = ยิ่งมากยิ่งดี
+  target: number | null;
+  unit: string | null;
+  weight: number;
+  active: boolean;
+  sort_order: number;
+};
+
+/** คะแนนรายเดือนของหัวข้อ */
+export type EvalScore = {
+  id: string;
+  item_id: string;
+  month: string; // YYYY-MM-01
+  actual: number | null;
+  rating: number | null;
+  note: string | null;
 };
 
 export type GradeRule = { grade: string; min: number };

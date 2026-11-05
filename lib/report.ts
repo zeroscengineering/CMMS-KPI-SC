@@ -1,7 +1,8 @@
 import ExcelJS from "exceljs";
 import type { YearData } from "./data";
 import { yearLabel, yearMonths, thaiMonth } from "./period";
-import { complaintTotal, ftfPct, pmPct, scoreTotals, sumLogs } from "./kpi";
+import { complaintTotal, ftfPct, pmPct, sumLogs } from "./kpi";
+import { evaluatePerson, teamEvaluation } from "./evaluation";
 
 const HEADER_FILL: ExcelJS.Fill = {
   type: "pattern",
@@ -19,7 +20,7 @@ function styleHeader(row: ExcelJS.Row) {
 }
 
 /** สร้างไฟล์ Excel รายงานสรุป KPI 3 ชีต: สรุปรายบุคคล / สรุปแผนก / บันทึกรายเดือน */
-export async function buildWorkbook({ settings, engineers, logs }: YearData) {
+export async function buildWorkbook({ settings, engineers, logs, items, scores }: YearData) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "CMMS KPI System";
   const fy = settings.year;
@@ -31,22 +32,30 @@ export async function buildWorkbook({ settings, engineers, logs }: YearData) {
   ws1.addRow([]);
   styleHeader(
     ws1.addRow([
-      "ชื่อ-นามสกุล", "ตำแหน่ง",
+      "อันดับ", "ชื่อ-นามสกุล", "ตำแหน่ง",
       "KPI1 คะแนน", "KPI2 FTF %", "KPI2 คะแนน", "KPI3 PM %", "KPI3 คะแนน", "KPI4 คะแนน",
+      "หัวข้อเพิ่มเติม (ชื่อ: คะแนน)",
       "คะแนนรวม (100)", `คะแนนส่วนผลงาน (${settings.performance_share})`, "เกรด", "Job Description",
     ])
   );
-  for (const e of engineers.filter((x) => x.active || logs.some((l) => l.engineer_id === x.id))) {
-    const ls = logs.filter((l) => l.engineer_id === e.id);
-    const r = scoreTotals(sumLogs(ls), settings, ls.length > 0);
-    const round = (n: number | null) => (n == null ? "-" : Math.round(n * 100) / 100);
+  const team = teamEvaluation(engineers, logs, items, scores, settings);
+  const round = (n: number | null) => (n == null ? "-" : Math.round(n * 100) / 100);
+  team.rows.forEach(({ e }, i) => {
+    const ev = evaluatePerson(e, logs, items, scores, settings);
+    const sc = (k: string) => round(ev.components.find((c) => c.key === k)?.score ?? null);
+    const custom = ev.components
+      .filter((c) => c.kind === "custom")
+      .map((c) => `${c.label}: ${round(c.score)} (น้ำหนัก ${c.weight})`)
+      .join("\n");
     ws1.addRow([
-      e.full_name, e.position, round(r.s1), round(r.ftf), round(r.s2), round(r.pm),
-      round(r.s3), round(r.s4), round(r.total), round(r.performance), r.grade ?? "-",
+      i + 1, e.full_name, e.position, sc("k1"), round(ev.ftf), sc("k2"), round(ev.pm),
+      sc("k3"), sc("k4"), custom, round(ev.total), round(ev.performance), ev.grade ?? "-",
       e.job_description ?? "",
     ]);
-  }
-  ws1.columns.forEach((c, i) => (c.width = i === 0 ? 28 : i === 11 ? 60 : 15));
+  });
+  ws1.addRow([]);
+  ws1.addRow(["", "เฉลี่ยทั้งแผนก", "", "", "", "", "", "", "", "", round(team.avgTotal), round(team.avgPerformance), team.grade ?? "-"]).font = { bold: true };
+  ws1.columns.forEach((c, i) => (c.width = i === 1 ? 28 : i === 9 ? 45 : i === 13 ? 60 : 15));
 
   // ---------- ชีต 2: สรุปแผนก ----------
   const ws2 = wb.addWorksheet("สรุปแผนก");
