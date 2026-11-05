@@ -9,7 +9,7 @@ const sarabun = Sarabun({
 });
 
 export const metadata: Metadata = {
-  title: "CMMS KPI | แสงชัยแอร์ ควอลิตี้",
+  title: "CMMS KPI | เอสซี โซลูชั่น",
   description: "ระบบบริหารงานซ่อมบำรุงและประเมิน KPI ทีมวิศวกรและช่าง",
 };
 

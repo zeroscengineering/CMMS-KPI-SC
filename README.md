@@ -1,4 +1,4 @@
-# CMMS KPI — แสงชัยแอร์ ควอลิตี้ จำกัด (ปีงบประมาณ 2570)
+# CMMS KPI — บริษัท เอสซี โซลูชั่น จำกัด (ปีงบประมาณ 2570)
 
 ระบบบันทึกและประเมิน KPI ทีมวิศวกร/ช่าง  
 Next.js 15 (App Router) · React 19 · Tailwind CSS 3 · Supabase (PostgreSQL + Auth + RLS) · Google Drive API · Vercel

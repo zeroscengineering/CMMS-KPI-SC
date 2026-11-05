@@ -35,7 +35,7 @@ export default function LoginPage() {
       <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-brand-700">
         <Wrench size={22} /> CMMS KPI
       </div>
-      <p className="mb-4 text-xs text-slate-500">แสงชัยแอร์ ควอลิตี้ จำกัด · ระบบประเมิน KPI ทีมวิศวกรและช่าง</p>
+      <p className="mb-4 text-xs text-slate-500">บริษัท เอสซี โซลูชั่น จำกัด · ระบบประเมิน KPI ทีมวิศวกรและช่าง</p>
       <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="label">อีเมล</label>
