@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
-import type { FiscalData } from "./data";
-import { fiscalLabel, fiscalMonths, thaiMonth } from "./fiscal";
+import type { YearData } from "./data";
+import { yearLabel, yearMonths, thaiMonth } from "./period";
 import { complaintTotal, ftfPct, pmPct, scoreTotals, sumLogs } from "./kpi";
 
 const HEADER_FILL: ExcelJS.Fill = {
@@ -19,21 +19,21 @@ function styleHeader(row: ExcelJS.Row) {
 }
 
 /** สร้างไฟล์ Excel รายงานสรุป KPI 3 ชีต: สรุปรายบุคคล / สรุปแผนก / บันทึกรายเดือน */
-export async function buildWorkbook({ settings, engineers, logs }: FiscalData) {
+export async function buildWorkbook({ settings, engineers, logs }: YearData) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "CMMS KPI System";
-  const fy = settings.fiscal_year;
+  const fy = settings.year;
   const name = new Map(engineers.map((e) => [e.id, e]));
 
   // ---------- ชีต 1: สรุปรายบุคคล ----------
   const ws1 = wb.addWorksheet("สรุปรายบุคคล");
-  ws1.addRow([`รายงานสรุปผลงานรายบุคคล - ${fiscalLabel(fy)}`]).font = { bold: true, size: 14 };
+  ws1.addRow([`รายงานสรุปผลงานรายบุคคล - ${yearLabel(fy)}`]).font = { bold: true, size: 14 };
   ws1.addRow([]);
   styleHeader(
     ws1.addRow([
       "ชื่อ-นามสกุล", "ตำแหน่ง",
       "KPI1 คะแนน", "KPI2 FTF %", "KPI2 คะแนน", "KPI3 PM %", "KPI3 คะแนน", "KPI4 คะแนน",
-      "คะแนนรวม (100)", `คะแนนส่วนผลงาน (${settings.performance_share})`, "เกรด",
+      "คะแนนรวม (100)", `คะแนนส่วนผลงาน (${settings.performance_share})`, "เกรด", "Job Description",
     ])
   );
   for (const e of engineers.filter((x) => x.active || logs.some((l) => l.engineer_id === x.id))) {
@@ -43,19 +43,20 @@ export async function buildWorkbook({ settings, engineers, logs }: FiscalData) {
     ws1.addRow([
       e.full_name, e.position, round(r.s1), round(r.ftf), round(r.s2), round(r.pm),
       round(r.s3), round(r.s4), round(r.total), round(r.performance), r.grade ?? "-",
+      e.job_description ?? "",
     ]);
   }
-  ws1.columns.forEach((c, i) => (c.width = i === 0 ? 28 : 15));
+  ws1.columns.forEach((c, i) => (c.width = i === 0 ? 28 : i === 11 ? 60 : 15));
 
   // ---------- ชีต 2: สรุปแผนก ----------
   const ws2 = wb.addWorksheet("สรุปแผนก");
-  ws2.addRow([`สรุประดับแผนก - ${fiscalLabel(fy)}`]).font = { bold: true, size: 14 };
+  ws2.addRow([`สรุประดับแผนก - ${yearLabel(fy)}`]).font = { bold: true, size: 14 };
   ws2.addRow([]);
   styleHeader(
     ws2.addRow(["เดือน", "ผิดพลาด (ครั้ง)", "ความเสียหาย (บาท)", "เคสทั้งหมด", "เคสแก้ซ้ำ",
       "FTF %", "PM มอบหมาย", "PM ตรงแผน", "PM %", "ข้อร้องเรียน"])
   );
-  for (const m of fiscalMonths(fy)) {
+  for (const m of yearMonths(fy)) {
     const t = sumLogs(logs.filter((l) => l.month === m));
     const f = ftfPct(t);
     const p = pmPct(t);
@@ -90,5 +91,5 @@ export async function buildWorkbook({ settings, engineers, logs }: FiscalData) {
   ws3.columns.forEach((c, i) => (c.width = i === 11 ? 40 : 16));
 
   const buffer = Buffer.from(await wb.xlsx.writeBuffer());
-  return { buffer, filename: `KPI_FY${fy}.xlsx` };
+  return { buffer, filename: `KPI_${fy}.xlsx` };
 }

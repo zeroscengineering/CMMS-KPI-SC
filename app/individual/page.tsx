@@ -1,14 +1,14 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Card, ErrorBox, FiscalYearSelect, GradeBadge, Loading } from "@/components/ui";
+import { Card, ErrorBox, YearSelect, GradeBadge, Loading } from "@/components/ui";
 import ExportButtons from "@/components/ExportButtons";
-import { currentFiscalYear, fiscalLabel } from "@/lib/fiscal";
-import { useFiscalData } from "@/lib/useFiscalData";
+import { currentYear, yearLabel } from "@/lib/period";
+import { useYearData } from "@/lib/useYearData";
 import { fmt, scoreTotals, sumLogs } from "@/lib/kpi";
 
 export default function IndividualPage() {
-  const [fy, setFy] = useState(currentFiscalYear());
-  const { settings, engineers, logs, loading, error } = useFiscalData(fy);
+  const [fy, setFy] = useState(currentYear());
+  const { settings, engineers, logs, loading, error } = useYearData(fy);
 
   const rows = useMemo(
     () =>
@@ -28,9 +28,9 @@ export default function IndividualPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">สรุปรายบุคคล</h1>
-          <p className="text-xs text-slate-500">{fiscalLabel(fy)}</p>
+          <p className="text-xs text-slate-500">{yearLabel(fy)}</p>
         </div>
-        <FiscalYearSelect value={fy} onChange={setFy} />
+        <YearSelect value={fy} onChange={setFy} />
       </div>
       {error && <ErrorBox message={error} />}
       {loading ? <Loading /> : (
@@ -59,7 +59,16 @@ export default function IndividualPage() {
                   {rows.map(({ e, months, t, r }, i) => (
                     <tr key={e.id}>
                       <td className="td text-slate-400">{i + 1}</td>
-                      <td className="td font-medium">{e.full_name}</td>
+                      <td className="td font-medium">
+                        {e.job_description?.trim() ? (
+                          <details>
+                            <summary className="cursor-pointer">{e.full_name}</summary>
+                            <div className="mt-1 max-w-xs whitespace-pre-wrap text-xs font-normal text-slate-500">{e.job_description}</div>
+                          </details>
+                        ) : (
+                          e.full_name
+                        )}
+                      </td>
                       <td className="td">{e.position}</td>
                       <td className="td">{months}</td>
                       <td className="td">

@@ -4,15 +4,15 @@ import {
   CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { AlertTriangle, ClipboardCheck, ShieldAlert, Wrench } from "lucide-react";
-import { Card, ErrorBox, FiscalYearSelect, Loading, StatusBadge } from "@/components/ui";
+import { Card, ErrorBox, YearSelect, Loading, StatusBadge } from "@/components/ui";
 import ExportButtons from "@/components/ExportButtons";
-import { currentFiscalYear, fiscalMonths, thaiMonth } from "@/lib/fiscal";
-import { useFiscalData } from "@/lib/useFiscalData";
+import { currentYear, yearMonths, thaiMonth } from "@/lib/period";
+import { useYearData } from "@/lib/useYearData";
 import { complaintTotal, fmt, ftfPct, kpiPass, pmPct, scoreTotals, sumLogs } from "@/lib/kpi";
 
 export default function DashboardPage() {
-  const [fy, setFy] = useState(currentFiscalYear());
-  const { settings, engineers, logs, loading, error } = useFiscalData(fy);
+  const [fy, setFy] = useState(currentYear());
+  const { settings, engineers, logs, loading, error } = useYearData(fy);
 
   const all = useMemo(() => sumLogs(logs), [logs]);
   const hasData = logs.length > 0;
@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
   const monthly = useMemo(
     () =>
-      fiscalMonths(fy).map((m) => {
+      yearMonths(fy).map((m) => {
         const ls = logs.filter((l) => l.month === m);
         const t = sumLogs(ls);
         return { m, label: thaiMonth(m), t, has: ls.length > 0, ftf: ftfPct(t), pm: pmPct(t) };
@@ -77,10 +77,10 @@ export default function DashboardPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold">สรุปแผนก (สะสมทั้งปีงบประมาณ)</h1>
+          <h1 className="text-xl font-semibold">สรุปแผนก (สะสมทั้งปี)</h1>
           <p className="text-xs text-slate-500">ทีมงานที่ใช้งาน {engineers.filter((e) => e.active).length} คน</p>
         </div>
-        <FiscalYearSelect value={fy} onChange={setFy} />
+        <YearSelect value={fy} onChange={setFy} />
       </div>
 
       {error && <ErrorBox message={error} />}
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-400">เส้นประ = เป้าหมาย (FTF {settings.target_ftf}% / PM {settings.target_pm}%)</p>
           </Card>
 
-          <Card title="ตารางแยกรายเดือน (พ.ย. – ต.ค.)">
+          <Card title="ตารางแยกรายเดือน (ม.ค. – ธ.ค.)">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

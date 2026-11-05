@@ -1,6 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
-import { currentFiscalYear, fiscalLabel } from "@/lib/fiscal";
+import { currentYear, yearLabel } from "@/lib/period";
 
 export function Card({
   title,
@@ -19,20 +19,20 @@ export function Card({
   );
 }
 
-export function FiscalYearSelect({
+export function YearSelect({
   value,
   onChange,
 }: {
   value: number;
   onChange: (fy: number) => void;
 }) {
-  const cur = currentFiscalYear();
+  const cur = currentYear();
   const years = [cur - 2, cur - 1, cur, cur + 1];
   return (
     <select className="input !w-auto" value={value} onChange={(e) => onChange(Number(e.target.value))}>
       {years.map((y) => (
         <option key={y} value={y}>
-          {fiscalLabel(y)}
+          {yearLabel(y)}
         </option>
       ))}
     </select>

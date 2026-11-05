@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { getSupabase } from "./supabase";
-import { loadFiscalData, type FiscalData } from "./data";
+import { loadYearData, type YearData } from "./data";
 import { DEFAULT_SETTINGS } from "./kpi";
 
-export function useFiscalData(fy: number) {
-  const [data, setData] = useState<FiscalData>({
-    settings: { ...DEFAULT_SETTINGS, fiscal_year: fy },
+export function useYearData(fy: number) {
+  const [data, setData] = useState<YearData>({
+    settings: { ...DEFAULT_SETTINGS, year: fy },
     engineers: [],
     logs: [],
   });
@@ -17,7 +17,7 @@ export function useFiscalData(fy: number) {
     setLoading(true);
     setError(null);
     try {
-      setData(await loadFiscalData(getSupabase(), fy));
+      setData(await loadYearData(getSupabase(), fy));
     } catch (e) {
       setError((e as { message?: string })?.message ?? "โหลดข้อมูลไม่สำเร็จ");
     } finally {

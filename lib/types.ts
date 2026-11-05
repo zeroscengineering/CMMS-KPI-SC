@@ -1,14 +1,15 @@
 export type Engineer = {
   id: string;
   full_name: string;
-  position: "วิศวกร" | "ช่าง";
+  position: string; // ตำแหน่ง (พิมพ์เองได้อิสระ)
+  job_description: string; // Job Description (JD)
   active: boolean;
 };
 
 export type GradeRule = { grade: string; min: number };
 
 export type Settings = {
-  fiscal_year: number;
+  year: number;
   weight_error: number;
   weight_ftf: number;
   weight_pm: number;
@@ -28,7 +29,7 @@ export type MonthlyLog = {
   id: string;
   engineer_id: string;
   month: string; // YYYY-MM-01
-  fiscal_year: number;
+  year: number;
   err_count: number;
   err_damage: number;
   total_cases: number;

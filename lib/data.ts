@@ -2,14 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_SETTINGS } from "./kpi";
 import type { Engineer, MonthlyLog, Settings } from "./types";
 
-export type FiscalData = { settings: Settings; engineers: Engineer[]; logs: MonthlyLog[] };
+export type YearData = { settings: Settings; engineers: Engineer[]; logs: MonthlyLog[] };
 
-/** โหลดข้อมูลทั้งหมดของปีงบประมาณ (ใช้ได้ทั้งฝั่ง client และ server) */
-export async function loadFiscalData(sb: SupabaseClient, fy: number): Promise<FiscalData> {
+/** โหลดข้อมูลทั้งหมดของปีที่เลือก (ใช้ได้ทั้งฝั่ง client และ server) */
+export async function loadYearData(sb: SupabaseClient, fy: number): Promise<YearData> {
   const [s, e, l] = await Promise.all([
-    sb.from("kpi_settings").select("*").eq("fiscal_year", fy).maybeSingle(),
+    sb.from("kpi_settings").select("*").eq("year", fy).maybeSingle(),
     sb.from("engineers").select("*").order("full_name"),
-    sb.from("monthly_kpi_logs").select("*").eq("fiscal_year", fy).order("month"),
+    sb.from("monthly_kpi_logs").select("*").eq("year", fy).order("month"),
   ]);
   if (s.error) throw s.error;
   if (e.error) throw e.error;
@@ -19,7 +19,7 @@ export async function loadFiscalData(sb: SupabaseClient, fy: number): Promise<Fi
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
     ...(row ?? {}),
-    fiscal_year: fy,
+    year: fy,
   } as Settings;
   // numeric จาก Postgres อาจเป็น string
   (Object.keys(settings) as (keyof Settings)[]).forEach((k) => {

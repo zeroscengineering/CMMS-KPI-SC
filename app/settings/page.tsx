@@ -1,21 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { Card, ErrorBox, FiscalYearSelect, Loading } from "@/components/ui";
-import { currentFiscalYear, fiscalLabel } from "@/lib/fiscal";
+import { Card, ErrorBox, YearSelect, Loading } from "@/components/ui";
+import EngineerManager from "@/components/EngineerManager";
+import { currentYear, yearLabel } from "@/lib/period";
 import { getSupabase } from "@/lib/supabase";
-import { useFiscalData, useRole } from "@/lib/useFiscalData";
+import { useYearData, useRole } from "@/lib/useYearData";
 import type { Settings } from "@/lib/types";
 
 export default function SettingsPage() {
-  const [fy, setFy] = useState(currentFiscalYear());
-  const { settings, engineers, loading, error, reload } = useFiscalData(fy);
+  const [fy, setFy] = useState(currentYear());
+  const { settings, engineers, loading, error, reload } = useYearData(fy);
   const { isAdmin, role } = useRole();
 
   const [s, setS] = useState<Settings>(settings);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [newName, setNewName] = useState("");
-  const [newPos, setNewPos] = useState<"วิศวกร" | "ช่าง">("ช่าง");
 
   useEffect(() => setS(settings), [settings]);
 
@@ -38,29 +37,9 @@ export default function SettingsPage() {
   async function saveSettings() {
     setMsg(null);
     if (weightSum !== 100) return setMsg({ ok: false, text: `น้ำหนักรวมต้องเท่ากับ 100% (ตอนนี้ ${weightSum}%)` });
-    const { error: err } = await getSupabase().from("kpi_settings").upsert({ ...s, fiscal_year: fy });
+    const { error: err } = await getSupabase().from("kpi_settings").upsert({ ...s, year: fy });
     if (err) return setMsg({ ok: false, text: err.code === "42501" ? "เฉพาะ admin เท่านั้นที่แก้ไขได้" : err.message });
     setMsg({ ok: true, text: "บันทึกการตั้งค่าแล้ว" });
-    reload();
-  }
-
-  async function addEngineer() {
-    if (!newName.trim()) return;
-    const { error: err } = await getSupabase().from("engineers").insert({ full_name: newName.trim(), position: newPos });
-    if (err) return setMsg({ ok: false, text: err.code === "23505" ? "มีชื่อนี้อยู่แล้ว" : err.message });
-    setNewName("");
-    reload();
-  }
-
-  async function toggleActive(id: string, active: boolean) {
-    await getSupabase().from("engineers").update({ active: !active }).eq("id", id);
-    reload();
-  }
-
-  async function removeEngineer(id: string, name: string) {
-    if (!confirm(`ลบ ${name} ? (ข้อมูลบันทึกรายเดือนของคนนี้จะถูกลบด้วย — แนะนำให้ “ปิดใช้งาน” แทน)`)) return;
-    const { error: err } = await getSupabase().from("engineers").delete().eq("id", id);
-    if (err) setMsg({ ok: false, text: err.message });
     reload();
   }
 
@@ -69,9 +48,9 @@ export default function SettingsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">ตั้งค่า</h1>
-          <p className="text-xs text-slate-500">{fiscalLabel(fy)} · สิทธิ์ของคุณ: {role ?? "…"}</p>
+          <p className="text-xs text-slate-500">{yearLabel(fy)} · สิทธิ์ของคุณ: {role ?? "…"}</p>
         </div>
-        <FiscalYearSelect value={fy} onChange={setFy} />
+        <YearSelect value={fy} onChange={setFy} />
       </div>
       {error && <ErrorBox message={error} />}
       {!isAdmin && role && <p className="text-sm text-amber-700">เฉพาะ admin เท่านั้นที่แก้ไขการตั้งค่าและรายชื่อทีมได้</p>}
@@ -79,7 +58,11 @@ export default function SettingsPage() {
 
       {loading ? <Loading /> : (
         <>
-          <Card title="น้ำหนัก KPI (รวม 100%) และเป้าหมาย">
+          <Card title={`พนักงานและ Job Description (${engineers.length} คน) — ใช้ร่วมกันทุกปี`}>
+            <EngineerManager engineers={engineers} isAdmin={isAdmin} reload={reload} onMessage={setMsg} />
+          </Card>
+
+          <Card title={`น้ำหนัก KPI (รวม 100%) และเป้าหมาย — ${yearLabel(fy)}`}>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {numField("KPI1 ความผิดพลาดหน้างาน (%)", "weight_error")}
               {numField("KPI2 First-Time Fix (%)", "weight_ftf")}
@@ -132,40 +115,6 @@ export default function SettingsPage() {
             )}
           </Card>
 
-          <Card title={`รายชื่อทีมงาน (${engineers.length} คน)`}>
-            {isAdmin && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                <input className="input !w-64" placeholder="ชื่อ-นามสกุล" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                <select className="input !w-auto" value={newPos} onChange={(e) => setNewPos(e.target.value as "วิศวกร" | "ช่าง")}>
-                  <option>วิศวกร</option>
-                  <option>ช่าง</option>
-                </select>
-                <button className="btn" onClick={addEngineer}><Plus size={16} /> เพิ่ม</button>
-              </div>
-            )}
-            <table className="w-full">
-              <thead><tr><th className="th">ชื่อ-นามสกุล</th><th className="th">ตำแหน่ง</th><th className="th">สถานะ</th><th className="th" /></tr></thead>
-              <tbody>
-                {engineers.map((e) => (
-                  <tr key={e.id}>
-                    <td className="td font-medium">{e.full_name}</td>
-                    <td className="td">{e.position}</td>
-                    <td className="td">
-                      <button disabled={!isAdmin} onClick={() => toggleActive(e.id, e.active)}
-                        className={`rounded-full px-2 py-0.5 text-xs ${e.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>
-                        {e.active ? "ใช้งาน" : "ปิดใช้งาน"}
-                      </button>
-                    </td>
-                    <td className="td">
-                      {isAdmin && (
-                        <button className="btn-ghost !px-2 text-rose-600" onClick={() => removeEngineer(e.id, e.full_name)}><Trash2 size={14} /></button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
         </>
       )}
     </div>

@@ -13,7 +13,7 @@ export default function ExportButtons({ fy }: { fy: number }) {
       const res = await fetch("/api/export", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fiscalYear: fy, convertToSheets }),
+        body: JSON.stringify({ year: fy, convertToSheets }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "ส่งออกไม่สำเร็จ");

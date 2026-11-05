@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ClipboardList, LayoutDashboard, LogOut, Settings, Users, Wrench } from "lucide-react";
 import { getSupabase } from "@/lib/supabase";
-import { useRole } from "@/lib/useFiscalData";
+import { useRole } from "@/lib/useYearData";
 
 const links = [
   { href: "/", label: "สรุปแผนก", icon: LayoutDashboard },

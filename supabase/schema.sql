@@ -1,5 +1,5 @@
 -- =====================================================================
--- CMMS KPI System - บริษัท เอสซี โซลูชั่น จำกัด (ปีงบประมาณ 2570)
+-- CMMS KPI System - บริษัท เอสซี โซลูชั่น จำกัด (เก็บข้อมูลรายปี)
 -- รันทั้งไฟล์นี้ใน Supabase > SQL Editor
 -- =====================================================================
 
@@ -62,17 +62,18 @@ as $$ select coalesce(public.app_role() in ('admin','editor'), false) $$;
 create table if not exists public.engineers (
   id         uuid primary key default gen_random_uuid(),
   full_name  text not null,
-  position   text not null default 'ช่าง' check (position in ('วิศวกร','ช่าง')),
+  position   text not null default 'ช่าง',          -- ตำแหน่ง (พิมพ์เองได้)
+  job_description text not null default '',          -- Job Description
   active     boolean not null default true,
   created_at timestamptz not null default now()
 );
 create unique index if not exists engineers_full_name_uq on public.engineers (lower(full_name));
 
 -- ---------------------------------------------------------------------
--- 3) kpi_settings : 1 แถวต่อปีงบประมาณ (พ.ศ.) เช่น 2570
+-- 3) kpi_settings : 1 แถวต่อปี (พ.ศ.) เช่น 2569
 -- ---------------------------------------------------------------------
 create table if not exists public.kpi_settings (
-  fiscal_year        int primary key,               -- พ.ศ. เช่น 2570 (พ.ย. 2569 - ต.ค. 2570)
+  year               int primary key,               -- พ.ศ. เช่น 2569 (ม.ค. - ธ.ค. 2026)
   weight_error       numeric not null default 30,   -- KPI1 ความผิดพลาดหน้างาน
   weight_ftf         numeric not null default 30,   -- KPI2 First-Time Fix
   weight_pm          numeric not null default 30,   -- KPI3 PM ตามแผน
@@ -91,7 +92,7 @@ create table if not exists public.kpi_settings (
   constraint weights_sum_100 check (weight_error + weight_ftf + weight_pm + weight_complaint = 100)
 );
 
-insert into public.kpi_settings (fiscal_year) values (2570) on conflict do nothing;
+insert into public.kpi_settings (year) values (2569) on conflict do nothing;
 
 -- ---------------------------------------------------------------------
 -- 4) monthly_kpi_logs : 1 แถว = 1 คน x 1 เดือน
@@ -100,7 +101,7 @@ create table if not exists public.monthly_kpi_logs (
   id            uuid primary key default gen_random_uuid(),
   engineer_id   uuid not null references public.engineers(id) on delete cascade,
   month         date not null,                 -- วันที่ 1 ของเดือน (ค.ศ.) เช่น 2026-11-01
-  fiscal_year   int  not null,                 -- พ.ศ. ถูกคำนวณโดย trigger
+  year          int  not null,                 -- พ.ศ. ถูกคำนวณโดย trigger
 
   -- KPI1
   err_count     int     not null default 0 check (err_count >= 0),
@@ -127,15 +128,14 @@ create table if not exists public.monthly_kpi_logs (
   constraint pm_on_plan_le_assigned check (pm_on_plan <= pm_assigned)
 );
 
-create index if not exists logs_fy_month_idx on public.monthly_kpi_logs (fiscal_year, month);
+create index if not exists logs_year_month_idx on public.monthly_kpi_logs (year, month);
 create index if not exists logs_engineer_idx on public.monthly_kpi_logs (engineer_id);
 
--- trigger: คำนวณปีงบประมาณ (พ.ย.-ต.ค.) + updated_at
+-- trigger: คำนวณปี พ.ศ. จากเดือน + updated_at
 create or replace function public.set_log_fields()
 returns trigger language plpgsql as $$
 begin
-  new.fiscal_year := (extract(year from new.month)::int
-                      + case when extract(month from new.month) >= 11 then 1 else 0 end) + 543;
+  new.year := extract(year from new.month)::int + 543;
   new.updated_at := now();
   return new;
 end;

@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import { Card, ErrorBox, FiscalYearSelect, GradeBadge, Loading } from "@/components/ui";
-import { currentFiscalYear, fiscalMonths, thaiMonth } from "@/lib/fiscal";
+import { Card, ErrorBox, YearSelect, GradeBadge, Loading } from "@/components/ui";
+import { currentYear, yearMonths, thaiMonth } from "@/lib/period";
 import { getSupabase } from "@/lib/supabase";
-import { useFiscalData, useRole } from "@/lib/useFiscalData";
+import { useYearData, useRole } from "@/lib/useYearData";
 import { complaintTotal, fmt, ftfPct, pmPct, scoreTotals, sumLogs } from "@/lib/kpi";
 import type { MonthlyLog } from "@/lib/types";
 
@@ -32,10 +32,10 @@ const blank = (month = "", engineer_id = ""): Form => ({
 const n = (v: string) => (v.trim() === "" ? 0 : Number(v));
 
 export default function EntryPage() {
-  const [fy, setFy] = useState(currentFiscalYear());
-  const { settings, engineers, logs, loading, error, reload } = useFiscalData(fy);
+  const [fy, setFy] = useState(currentYear());
+  const { settings, engineers, logs, loading, error, reload } = useYearData(fy);
   const { canEdit } = useRole();
-  const months = useMemo(() => fiscalMonths(fy), [fy]);
+  const months = useMemo(() => yearMonths(fy), [fy]);
 
   const [form, setForm] = useState<Form>(blank());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,7 +45,7 @@ export default function EntryPage() {
 
   const active = engineers.filter((e) => e.active);
 
-  // ตั้งค่าเริ่มต้นของเดือน = เดือนปัจจุบัน (ถ้าอยู่ในปีงบประมาณ) ไม่เช่นนั้นเดือนแรก
+  // ตั้งค่าเริ่มต้นของเดือน = เดือนปัจจุบัน (ถ้าอยู่ในปีที่เลือก) ไม่เช่นนั้นเดือนแรก
   useEffect(() => {
     const now = new Date();
     const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -142,7 +142,7 @@ export default function EntryPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">บันทึกรายเดือน (1 แถว = 1 คน × 1 เดือน)</h1>
-        <FiscalYearSelect value={fy} onChange={setFy} />
+        <YearSelect value={fy} onChange={setFy} />
       </div>
       {error && <ErrorBox message={error} />}
 

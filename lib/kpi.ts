@@ -9,7 +9,7 @@ export const DEFAULT_GRADES: GradeRule[] = [
   { grade: "D", min: 0 },
 ];
 
-export const DEFAULT_SETTINGS: Omit<Settings, "fiscal_year"> = {
+export const DEFAULT_SETTINGS: Omit<Settings, "year"> = {
   weight_error: 30,
   weight_ftf: 30,
   weight_pm: 30,
